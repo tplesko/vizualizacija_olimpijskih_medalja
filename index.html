@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <title>Olimpijske medalje - Vizualizacija</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="icon" type="image/png" href="olympic-icon.png" sizes="32x32">
+  <style>
+    :root {
+      --primary-color: #1e3a8a;
+      --secondary-color: #f97316;
+      --bg-gradient: linear-gradient(135deg, #1e3a8a, #4b5e8a);
+      --text-color: #ffffff;
+      --accent-color: #f0f0f0;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="rgba(255,255,255,0.05)" width="100" height="100"/></svg>') repeat;
+      opacity: 0.1;
+      z-index: 0;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 2rem 0;
+      text-shadow: var(--shadow);
+      letter-spacing: 0.5px;
+      z-index: 1;
+    }
+
+    svg {
+      position: relative;
+      display: block;
+      margin: 1rem auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      z-index: 1;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      pointer-events: none;
+      font-size: 14px;
+      color: #333;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(5px);
+      z-index: 2;
+    }
+
+    #controlContainer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem 2rem;
+      border-radius: 50px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      z-index: 1;
+    }
+
+    #controlContainer span {
+      font-size: 1.2rem;
+      font-weight: 500;
+    }
+
+    #message {
+      text-align: center;
+      color: #ff6b6b;
+      font-weight: 600;
+      margin: 1rem 0;
+      font-size: 1.1rem;
+      z-index: 1;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 50px;
+      background: var(--secondary-color);
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.3s, box-shadow 0.3s;
+      box-shadow: var(--shadow);
+    }
+
+    button:hover:not(:disabled) {
+      background: #ea580c;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: var(--shadow);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      background: #666;
+    }
+
+    #contentContainer {
+      display: flex;
+      flex-direction: row;
+      gap: 2rem;
+      align-items: flex-start;
+    }
+
+    #searchContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 1.5rem 0;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1rem 2rem;
+      border-radius: 25px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      z-index: 1;
+    }
+
+    #searchContainer h2 {
+      text-align: center;
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      color: var(--text-color);
+    }
+
+    #countrySelect {
+      padding: 10px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 50px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+      width: 200px;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+      transition: background 0.3s;
+      backdrop-filter: blur(10px);
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12"><path fill="%23ffffff" d="M6 9L1.5 3h9L6 9z"/></svg>');
+      background-repeat: no-repeat;
+      background-position: right 15px center;
+      background-size: 12px;
+    }
+
+    #countrySelect {
+      /* Existing styles */
+      background: rgba(255, 255, 255, 0.15); /* Slightly more opaque */
+      color: black; /* Ensure text is white */
+    }
+    #countrySelect option {
+      background: #1e3a8a;
+      color: #ffffff; /* Ensure option text is white */
+    }
+
+    #countrySelect option:disabled {
+      color: #aaa;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+<h1>Dobrodošli na vizualizaciju olimpijskih medalja</h1>
+
+<div id="controlContainer">
+  <span>Godina: <span id="yearLabel">1896</span></span>
+  <button id="playPauseBtn">Pauziraj</button>
+  <button id="restartBtn">Ponovo pokreni</button>
+  <button id="skipBtn">Preskoči na kraj</button>
+</div>
+
+<div id="contentContainer">
+  <div>
+    <div id="message"></div>
+    <svg width="960" height="600"></svg>
+    <div class="tooltip" style="opacity:0; position: absolute;"></div>
+  </div>
+
+  <div id="searchContainer">
+    <h2>Odaberite državu čije detalje s OI želite prikazati</h2>
+    <select id="countrySelect">
+      <option value="" selected disabled>Odaberite državu</option>
+    </select>
+    <br>
+    <button id="searchBtn">Pretražite</button>
+
+    <div id="usageContainer">
+      <p style="text-align: center; max-width: 900px; margin: 1.5rem auto; font-size: 1rem;">
+        Vizualizacija prikazuje broj osvojenih medalja po državama kroz povijest Olimpijskih igara. 
+        Animacija automatski prolazi kroz godine, a veličina krugova označava ukupan broj medalja osvojenih te godine. <br><br>
+        Tijekom animacije možete pauzirati prikaz klikom na gumb <strong>"Pauziraj"</strong>, 
+        a prelaskom mišem preko krugova otkrit ćete detalje: broj zlatnih, srebrnih i brončanih medalja za odabranu zemlju u toj godini. <br><br>
+        U godinama kada se Igre nisu održale (npr. zbog ratnih okolnosti) nema podataka za prikaz.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const width = 960;
+  const height = 600;
+  const svg = d3.select("svg");
+  const tooltip = d3.select(".tooltip");
+  const message = d3.select("#message");
+  const projection = d3.geoNaturalEarth1().scale(160).translate([width / 2, height / 2]);
+  const path = d3.geoPath().projection(projection);
+  
+  const continentColor = {
+    Europe: "#377eb8",
+    "North America": "#e41a1c",
+    "South America": "#a65628",
+    Asia: "#ff7f00",
+    Africa: "#4daf4a",
+    Oceania: "#984ea3",
+    Australia: "#984ea3"
+  };
+  
+  let countryNames = {},
+      nocContinents = {};
+  
+  const mapGroup = svg.append("g").attr("id", "mapLayer");
+  const circleGroup = svg.append("g").attr("id", "circleLayer");
+  
+  Promise.all([
+    d3.json("custom.geo.json"),
+    d3.csv("olympic_medals_detailed.csv", d => {
+      d.NOC = d.NOC.toUpperCase().trim();
+      d.Year = +d.Year;
+      d.total = d.gold + d.silver + d.bronze;
+      d.gold = +d.gold;
+      d.silver = +d.silver;
+      d.bronze = +d.bronze;
+      d.lat = +d.lat;
+      d.lon = +d.lon;
+      return d;
+    }),
+    d3.csv("noc_regions.csv")
+  ]).then(([geo, data, regions]) => {
+    regions.forEach(d => {
+      let correctedName = d.region?.trim();
+      countryNames[d.NOC] = correctedName;
+      nocContinents[d.NOC] = d.Continent || null;
+    });
+  
+    const countryMap = {};
+    // Mapiranje države na više NOC kodova
+    const countryToNOCs = {};
+    console.log("Primljeni podaci iz noc_regions.csv:", regions);
+    regions.forEach(d => {
+      let correctedName = d.region;
+      if (correctedName === "USA") correctedName = "United States of America";
+      if (correctedName === "UK" || correctedName === "Great Britain") correctedName = "United Kingdom";
+      if (correctedName === "Russia" || d.NOC === "EUN" || d.NOC === "URS") correctedName = "Russia";
+      if (correctedName === "Canada") correctedName = "Canada";
+
+      const noc = d.NOC.trim();
+      const country = correctedName.trim();
+
+      if (!countryToNOCs[country]) {
+        countryToNOCs[country] = new Set();
+      }
+      countryToNOCs[country].add(noc);
+
+      countryNames[noc] = country;
+      nocContinents[noc] = d.Continent || null;
+    });
+
+    const uniqueCountries = Object.keys(countryToNOCs).sort();
+    console.log("Popunjavam dropdown s državama:", uniqueCountries);
+
+    d3.select("#countrySelect")
+      .selectAll("option:not(:first-child)")
+      .data(uniqueCountries)
+      .enter()
+      .append("option")
+      .attr("value", d => d)
+      .text(d => d);
+
+    d3.select("#searchBtn").on("click", function () {
+      const selectedCountry = d3.select("#countrySelect").property("value");
+    
+      if (!selectedCountry) {
+        alert("Molimo odaberite državu!");
+        return;
+      }
+    
+      const nocList = Array.from(countryToNOCs[selectedCountry] || []);
+      const filtered = data.filter(d =>
+        nocList.includes(d.NOC) &&
+        (d.gold > 0 || d.silver > 0 || d.bronze > 0)
+      );
+    
+      console.log("Odabrana država:", selectedCountry);
+      console.log("Korišteni NOC kodovi:", nocList);
+      console.log("Broj pronađenih zapisa:", filtered.length);
+    
+      if (filtered.length > 0) {
+        const uniqueNOCs = Array.from(new Set(nocList));
+        const url = `country_details.html?country=${encodeURIComponent(selectedCountry)}&nocs=${uniqueNOCs.join(",")}`;
+        window.open(url, "_blank");
+      } else {
+        alert("Za odabranu državu nema podataka! Molimo odaberite državu koja ima podatke.");
+        d3.select("#countrySelect").property("value", "");
+      }
+    });    
+    
+  
+    data.forEach(d => {
+      d.region = countryNames[d.NOC];
+      d.continent = nocContinents[d.NOC] || d.continent;
+    });
+  
+    mapGroup.selectAll("path")
+      .data(geo.features)
+      .join("path")
+      .attr("d", path)
+      .attr("fill", "#ddd")
+      .attr("stroke", "#aaa");
+  
+    const radius = d3.scaleSqrt().domain([0, d3.max(data, d => d.total)]).range([2, 20]);
+    const years = [...new Set(data.map(d => d.Year))].sort((a, b) => a - b);
+    let currentYearIndex = 0;
+    let isPlaying = true;
+    let animationInterval;
+  
+    const update = year => {
+      d3.select("#yearLabel").text(year);
+  
+      const aggregated = d3.rollups(
+        data.filter(d => d.Year === year && !isNaN(d.lat) && !isNaN(d.lon)),
+        v => ({
+          gold: d3.sum(v, d => d.gold),
+          silver: d3.sum(v, d => d.silver),
+          bronze: d3.sum(v, d => d.bronze),
+          total: d3.sum(v, d => d.gold + d.silver + d.bronze),
+          lat: v[0].lat,
+          lon: v[0].lon,
+          NOC: v[0].NOC,
+          continent: v[0].continent
+        }),
+        d => d.NOC
+      ).map(d => d[1]);
+  
+      if (aggregated.length === 0) {
+        message.text([1916, 1940, 1944].includes(year) ? "Olimpijske igre nisu održane zbog ratnih okolnosti." : "Nema dostupnih podataka za ovu godinu.");
+      } else {
+        message.text("");
+      }
+  
+      const circles = circleGroup.selectAll("circle").data(aggregated, d => d.NOC);
+  
+      circles.join(
+        enter => enter.append("circle")
+          .style("pointer-events", "all")
+          .attr("cx", d => projection([d.lon, d.lat])[0])
+          .attr("cy", d => projection([d.lon, d.lat])[1])
+          .attr("r", 0)
+          .attr("fill", d => continentColor[d.continent] || "#999")
+          .attr("stroke", "#333")
+          .attr("stroke-width", 0.5)
+          .on("mouseover", function(event, d) {
+            tooltip.transition().duration(200).style("opacity", 1);
+            tooltip.html(`
+              <strong>${countryNames[d.NOC] || d.NOC}</strong><br>
+              🥇 ${d.gold} | 🥈 ${d.silver} | 🥉 ${d.bronze}<br>
+              Ukupno: ${d.total}`)
+              .style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mousemove", function(event) {
+            tooltip.style("left", (event.pageX + 10) + "px")
+                   .style("top", (event.pageY - 28) + "px");
+          })
+          .on("mouseout", function() {
+            tooltip.transition().duration(300).style("opacity", 0);
+          })
+          .transition().duration(500)
+          .attr("r", d => radius(d.total)),
+        update => update.transition().duration(500).attr("r", d => radius(d.total)),
+        exit => exit.transition().duration(500).attr("r", 0).remove()
+      );
+    };
+  
+    const animate = () => {
+      if (isPlaying && currentYearIndex < years.length) {
+        update(years[currentYearIndex]);
+        currentYearIndex++;
+        if (currentYearIndex >= years.length) {
+          isPlaying = false;
+          d3.select("#playPauseBtn").text("Pokreni");
+        }
+      }
+    };
+  
+    const startAnimation = () => {
+      if (!isPlaying) {
+        isPlaying = true;
+        d3.select("#playPauseBtn").text("Pauziraj");
+        d3.select("#playPauseBtn").attr("disabled", null);
+        animationInterval = setInterval(animate, 2000);
+      }
+    };
+  
+    const pauseAnimation = () => {
+      isPlaying = false;
+      d3.select("#playPauseBtn").text("Pokreni");
+      clearInterval(animationInterval);
+    };
+  
+    d3.select("#playPauseBtn").on("click", () => isPlaying ? pauseAnimation() : startAnimation());
+    d3.select("#restartBtn").on("click", () => {
+      pauseAnimation();
+      currentYearIndex = 0;
+      isPlaying = true;
+      d3.select("#playPauseBtn").text("Pauziraj").attr("disabled", null);
+      update(years[0]);
+      animationInterval = setInterval(animate, 2000);
+    });
+    d3.select("#skipBtn").on("click", () => {
+      pauseAnimation();
+      currentYearIndex = years.length - 1;
+      update(years[currentYearIndex]);
+      d3.select("#playPauseBtn").text("Pokreni").attr("disabled", true);
+    });
+  
+    update(1896);
+    animationInterval = setInterval(animate, 2000);
+  });
+  </script>
+</body>
+</html>

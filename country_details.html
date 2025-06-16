@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <title id="tabTitle">Detalji o medaljama - [Country]</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: #333;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 2rem;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .chart {
+      background: #fffdf6;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .chart:hover {
+      transform: scale(1.02);
+    }
+    .chart h3 {
+      margin-bottom: 15px;
+      font-size: 1.15rem;
+      color: #222;
+    }
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    select, button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 25px;
+      background: #ffe0c7;
+      color: #333;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+    }
+    button:hover, select:hover {
+      background: #ffccaa;
+    }
+    .legend {
+      font-size: 0.85rem;
+      margin-top: 10px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+    .tooltip {
+      position: absolute;
+      background: white;
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      pointer-events: none;
+      font-size: 0.85rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    #extraCharts {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+  <script defer src="country_charts.js"></script>
+</head>
+<body>
+  <h1 id="countryTitle">[Country] 1896 - 2016</h1>
+  <div class="filters">
+    <select id="yearFilter"><option value="">Sve godine</option></select>
+    <select id="medalFilter">
+      <option value="">Sve medalje</option>
+      <option value="Gold">Zlato</option>
+      <option value="Silver">Srebro</option>
+      <option value="Bronze">Bronca</option>
+    </select>
+    <select id="sportFilter"><option value="">Svi sportovi</option></select>
+    <button id="resetFilters">Poništi filtre</button>
+    <div id="filterHint" style="display:none; margin-top: 10px; color: #f57c00; font-size: 14px;">
+      ⚠️ Napomena: neke kombinacije možda neće imati podatke.
+    </div>    
+  </div>
+  <div class="container">
+    <div class="chart">
+      <h3>Vrste medalja</h3>
+      <svg id="barChart" width="300" height="200"></svg>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-color" style="background:#FFD700"></span> Zlato</div>
+        <div class="legend-item"><span class="legend-color" style="background:#C0C0C0"></span> Srebro</div>
+        <div class="legend-item"><span class="legend-color" style="background:#CD7F32"></span> Bronca</div>
+      </div>
+    </div>
+    <div class="chart">
+      <h3>Top 5 sportova s najviše osvojenih medalja</h3>
+      <svg id="lineChart" width="300" height="200"></svg>
+    </div>
+    <div class="chart">
+      <h3>Muški vs ženski osvajači</h3>
+      <svg id="pieChart" width="300" height="200"></svg>
+    </div>
+  </div>
+  <div id="extraCharts">
+    <div class="chart">
+      <h3>Top godine po broju medalja</h3>
+      <svg id="heatMapChart" width="300" height="200"></svg>
+    </div>
+    <div class="chart">
+      <h3>Medalje po sezoni</h3>
+      <svg id="seasonChart" width="300" height="200"></svg>
+    </div>
+  </div>
+  <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+</body>
+</html>
